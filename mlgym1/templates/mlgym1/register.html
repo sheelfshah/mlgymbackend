@@ -1,0 +1,12 @@
+{% extends "mlgym1/base.html" %}
+
+{% block content %}
+   
+    <form method="post" action="{% url 'register' %}">
+    {% csrf_token %}
+        <h2>Enter Details Here</h2>
+        {{user_form.as_p}}
+        <input calss="button" type="submit" value="Sign Up" />
+        <h3>Already have an account? Login <a href="{%url 'login'%}">here</a></h3>
+    </form>
+{% endblock %}
