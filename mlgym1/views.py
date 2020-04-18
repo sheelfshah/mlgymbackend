@@ -4,6 +4,7 @@ import numpy as np
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import MyUser
 from .forms import MyUserForm
+from .algorithms import perceptron, perceptron_predict
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 
@@ -47,7 +48,7 @@ def logout_user(request):
 	return redirect('homepage')
 
 @login_required
-def upload_csv(request):
+def upload_csv_train(request):
 	if request.method == "GET":
 		return render(request, 'mlgym1/csv_upload.html', {})
 
@@ -56,4 +57,30 @@ def upload_csv(request):
 		return redirect("csv_upload")
 
 	db=pd.read_csv(csv_file)
-	return redirect('homepage')
+	theta=perceptron(db)
+	response= redirect('test_upload')
+	response.set_cookie('theta', theta)
+	return response
+
+@login_required
+def upload_csv_test(request):
+	theta_string=request.COOKIES.get('theta',"")
+	trained=True
+	result_available=False
+	if theta_string=="":
+		trained=False
+	else:
+		#obtain theta in numpy form for further use
+		theta = np.array([[float(j) for j in i.split('\t')] for i in theta_string.splitlines()])
+
+	if request.method == "GET":
+		return render(request, 'mlgym1/test_upload.html', {'trained':trained,'result_available':result_available})
+	if not trained:
+		return redirect('csv_upload')
+	csv_file=request.FILES['filename']
+	if not csv_file.name.endswith('.csv'):
+		return redirect('test_upload')
+	db=pd.read_csv(csv_file)
+	result_string=perceptron_predict(db, theta)
+	result_available=True
+	return render(request, 'mlgym1/test_upload.html', {'trained':trained, 'result':result_string, 'result_available':result_available})

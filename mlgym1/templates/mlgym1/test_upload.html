@@ -1,0 +1,17 @@
+{% extends 'mlgym1/base.html'%}
+{% block content %}
+{% if trained %}
+{% if not result_available %}
+<h2>Upload CSV File for testing</h2>
+<form action="{% url 'test_upload' %}" method="POST" class="post-form" enctype="multipart/form-data">
+	{%csrf_token%}
+	<input type = "file" name = 'filename' required="True"/>
+	<input type="submit" value="Upload"/>
+</form>
+{% else %}
+<h2>Predictions: {{result}}</h2>
+{% endif %}
+{% else %}
+<h2>Training data unavailable. You can train an algorithm <a href="{% url 'csv_upload' %}">here</a></h2>
+{% endif %}
+{% endblock %}
