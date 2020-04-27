@@ -1,0 +1,9 @@
+{% extends 'mlgym1/base.html'%}
+{% block content %}
+<h2>Choose method for training</h2>
+<form method="POST" class="post-form" enctype="multipart/form-data" id="method_form">
+	{%csrf_token%}
+	{{form.as_p}}
+	<input type="submit" value="Submit">
+</form>
+{% endblock %}

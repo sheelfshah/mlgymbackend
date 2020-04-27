@@ -7,3 +7,11 @@ class MyUserForm(forms.ModelForm):
 	class Meta:
 		model=User
 		fields={'username','password'}
+
+training_methods=(
+	("ptron","Perceptron"),
+	("nn4","4 Layer Neural Network"),
+	("0", "Don't train")
+	)
+class TrainingMethodForm(forms.Form):
+	method_field=forms.MultipleChoiceField(choices=training_methods)
