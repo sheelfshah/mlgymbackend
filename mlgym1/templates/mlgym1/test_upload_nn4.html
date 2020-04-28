@@ -3,7 +3,7 @@
 {% if trained %}
 	{% if not result_available %}
 		<h2>Upload CSV File for testing</h2>
-		<form action="{% url 'test_upload_nn4' %}" method="POST" class="post-form" enctype="multipart/form-data">
+		<form action="{% url 'test_upload_nn4' %}" method="POST" enctype="multipart/form-data">
 			{%csrf_token%}
 			<input type = "file" name = 'filename' required="True"/>
 			<input type="submit" value="Upload"/>

@@ -186,12 +186,16 @@ def upload_csv_train_logreg(request):
 
 	csv_file1=request.FILES['file1']
 	csv_file2=request.FILES['file2']
+	lr=str(request.POST.get('learning_rate'))
+	iters=str(request.POST.get('max_iterations'))
+	lr=float(lr)
+	iters=int(iters)
 	if not csv_file1.name.endswith('.csv') or not csv_file1.name.endswith('.csv') :
 		return redirect("csv_upload_logreg")
 
 	db_x=pd.read_csv(csv_file1)
 	db_y=pd.read_csv(csv_file2)
-	params=logreg_train(db_x, db_y)
+	params=logreg_train(db_x, db_y,iters,lr)
 	request.user.thetas.all().delete()
 	theta_w=ThetaString()
 	theta_w.name="theta_logreg_w"
@@ -201,7 +205,6 @@ def upload_csv_train_logreg(request):
 	theta_b=ThetaString()
 	theta_b.name="theta_logreg_b"
 	theta_b.theta_string=str(params["b"])
-	print(theta_b.theta_string)
 	theta_b.user=request.user
 	theta_b.save()
 	return redirect('test_upload_logreg')

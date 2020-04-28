@@ -1,13 +1,20 @@
 {% extends 'mlgym1/base.html'%}
 {% block content %}
 <h2>Upload CSV File for training logistic regression model</h2>
-<form action="{% url 'csv_upload_logreg' %}" method="POST" class="post-form" enctype="multipart/form-data">
+<form action="{% url 'csv_upload_logreg' %}" method="POST" enctype="multipart/form-data">
 	{%csrf_token%}
 	<label for="file1">X - Features</label>
 	<input type = "file" id="file1" name = 'file1' required="True"/>
 	<br>
 	<label for="file2">Y - Results</label>
 	<input type = "file" id="file2" name = 'file2' required="True"/>
+	<br>
+	<label for="learning_rate">Learning Rate</label>
+	<input type="number" name='learning_rate' id="learning_rate" placeholder="0.01" step="0.001" min="0.001" max="10" required="True">
+	<br>
+	<br>
+	<label for="max_iterations">Number of Iterations</label>
+	<input type="number" name='max_iterations' id="max_iterations" placeholder="1000" step="100" min="200" max="100000" required="True">
 	<br>
 	<input type="submit" value="Upload"/>
 </form>
