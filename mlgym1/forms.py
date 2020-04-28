@@ -11,7 +11,8 @@ class MyUserForm(forms.ModelForm):
 training_methods=(
 	("ptron","Perceptron"),
 	("nn4","4 Layer Neural Network"),
-	("0", "Don't train")
+	("0", "Don't train"),
+	("logreg","Logistic Regression")
 	)
 class TrainingMethodForm(forms.Form):
 	method_field=forms.MultipleChoiceField(choices=training_methods)

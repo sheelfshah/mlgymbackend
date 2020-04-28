@@ -5,6 +5,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import MyUser, ThetaString
 from .forms import MyUserForm, TrainingMethodForm
 from .algorithms import *
+from .Koustav_LR import *
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from .signals import *
@@ -60,6 +61,8 @@ def choose_method(request):
 				return redirect('csv_upload_perceptron')
 			elif method[0]=="nn4":
 				return redirect('csv_upload_nn4')
+			elif method[0]=="logreg":
+				return redirect('csv_upload_logreg')
 	return render(request, 'mlgym1/choose_method.html', {'form':form})
 
 @login_required
@@ -80,34 +83,6 @@ def upload_csv_train_perceptron(request):
 	theta_model.user=request.user
 	theta_model.save()
 	response= redirect('test_upload_perceptron')
-	return response
-
-@login_required
-def upload_csv_train_nn4(request):
-	if request.method == "GET":
-		return render(request, 'mlgym1/csv_upload_nn4.html', {})
-
-	csv_file1=request.FILES['file1']
-	csv_file2=request.FILES['file2']
-	if not csv_file1.name.endswith('.csv') or not csv_file1.name.endswith('.csv') :
-		return redirect("csv_upload_nn4")
-
-	db_x=pd.read_csv(csv_file1)
-	db_y=pd.read_csv(csv_file2)
-	theta_list=db_to_nn4(db_x, db_y)
-	response= redirect('test_upload_nn4')
-	request.user.thetas.all().delete()
-	theta_len=ThetaString()
-	theta_len.name="theta_nn4_len"
-	theta_len.theta_string=str(len(theta_list))
-	theta_len.user=request.user
-	theta_len.save()
-	for i in range(len(theta_list)):
-		theta=ThetaString()
-		theta.name='theta_nn4_'+str(i)
-		theta.theta_string=numpy_to_str(theta_list[i])
-		theta.user=request.user
-		theta.save()
 	return response
 
 @login_required
@@ -139,6 +114,34 @@ def upload_csv_test_perceptron(request):
 	except:
 		result_available=False
 	return render(request, 'mlgym1/test_upload_perceptron.html', {'trained':trained, 'result':result_string, 'result_available':result_available})
+
+@login_required
+def upload_csv_train_nn4(request):
+	if request.method == "GET":
+		return render(request, 'mlgym1/csv_upload_nn4.html', {})
+
+	csv_file1=request.FILES['file1']
+	csv_file2=request.FILES['file2']
+	if not csv_file1.name.endswith('.csv') or not csv_file1.name.endswith('.csv') :
+		return redirect("csv_upload_nn4")
+
+	db_x=pd.read_csv(csv_file1)
+	db_y=pd.read_csv(csv_file2)
+	theta_list=db_to_nn4(db_x, db_y)
+	response= redirect('test_upload_nn4')
+	request.user.thetas.all().delete()
+	theta_len=ThetaString()
+	theta_len.name="theta_nn4_len"
+	theta_len.theta_string=str(len(theta_list))
+	theta_len.user=request.user
+	theta_len.save()
+	for i in range(len(theta_list)):
+		theta=ThetaString()
+		theta.name='theta_nn4_'+str(i)
+		theta.theta_string=numpy_to_str(theta_list[i])
+		theta.user=request.user
+		theta.save()
+	return response
 
 @login_required
 def upload_csv_test_nn4(request):
@@ -174,3 +177,59 @@ def upload_csv_test_nn4(request):
 		result_str=""
 		result_available=False
 	return render(request, 'mlgym1/test_upload_nn4.html', {'trained':trained,'result_available':result_available,'result_string':result_str})
+
+
+@login_required
+def upload_csv_train_logreg(request):
+	if request.method == "GET":
+		return render(request, 'mlgym1/csv_upload_logreg.html', {})
+
+	csv_file1=request.FILES['file1']
+	csv_file2=request.FILES['file2']
+	if not csv_file1.name.endswith('.csv') or not csv_file1.name.endswith('.csv') :
+		return redirect("csv_upload_logreg")
+
+	db_x=pd.read_csv(csv_file1)
+	db_y=pd.read_csv(csv_file2)
+	params=logreg_train(db_x, db_y)
+	request.user.thetas.all().delete()
+	theta_w=ThetaString()
+	theta_w.name="theta_logreg_w"
+	theta_w.theta_string=numpy_to_str(params["w"])
+	theta_w.user=request.user
+	theta_w.save()
+	theta_b=ThetaString()
+	theta_b.name="theta_logreg_b"
+	theta_b.theta_string=str(params["b"])
+	print(theta_b.theta_string)
+	theta_b.user=request.user
+	theta_b.save()
+	return redirect('test_upload_logreg')
+
+@login_required
+def upload_csv_test_logreg(request):
+	thetas=request.user.thetas.all()
+	trained=True
+	result_available=False
+	theta_w=thetas.filter(name="theta_logreg_w")
+	theta_b=thetas.filter(name="theta_logreg_b")
+	if len(theta_w)==0 or len(theta_b)==0:
+		trained=False
+	else:
+		theta_w=str_to_numpy(theta_w[0].theta_string)
+		theta_b=float(theta_b[0].theta_string)
+	if request.method =="GET":
+		return render(request, 'mlgym1/test_upload_logreg.html',{'trained':trained,'result_available':result_available})
+	csv_file=request.FILES['filename']
+	if not csv_file.name.endswith('.csv'):
+		return redirect('test_upload_nn4')
+	db=pd.read_csv(csv_file)
+	try:
+		params={"w":theta_w,"b" :theta_b}
+		result=logreg_predict(db,params)
+		result_str=numpy_to_str(result)
+		result_available=True
+	except:
+		result_str=""
+		result_available=False
+	return render(request, 'mlgym1/test_upload_logreg.html', {'trained':trained,'result_available':result_available,'result_string':result_str})
