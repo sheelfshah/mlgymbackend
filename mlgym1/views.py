@@ -6,6 +6,7 @@ from .models import MyUser, ThetaString
 from .forms import MyUserForm, TrainingMethodForm
 from .algorithms import *
 from .Koustav_LR import *
+from .linreg_normal import *
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from .signals import *
@@ -63,6 +64,8 @@ def choose_method(request):
 				return redirect('csv_upload_nn4')
 			elif method[0]=="logreg":
 				return redirect('csv_upload_logreg')
+			elif method[0]=="linreg_normal":
+				return redirect('csv_upload_linreg_normal')
 	return render(request, 'mlgym1/choose_method.html', {'form':form})
 
 @login_required
@@ -236,3 +239,54 @@ def upload_csv_test_logreg(request):
 		result_str=""
 		result_available=False
 	return render(request, 'mlgym1/test_upload_logreg.html', {'trained':trained,'result_available':result_available,'result_string':result_str})
+
+@login_required
+def upload_csv_train_linreg_normal(request):
+	if request.method == "GET":
+		return render(request, 'mlgym1/csv_upload_linreg_normal.html', {})
+
+	csv_file=request.FILES['filename']
+	if not csv_file.name.endswith('.csv'):
+		return redirect("csv_upload_linreg_normal")
+
+	db=pd.read_csv(csv_file)
+	theta=linreg_normal_train(db.iloc[:,:-1],db.iloc[:,-1])
+	theta_str=numpy_to_str(theta)
+	request.user.thetas.all().delete()
+	theta_model=ThetaString()
+	theta_model.name="theta_linreg_normal"
+	theta_model.theta_string=theta_str
+	theta_model.user=request.user
+	theta_model.save()
+	response= redirect('test_upload_linreg_normal')
+	return response
+
+@login_required
+def upload_csv_test_linreg_normal(request):
+	thetas=request.user.thetas.all()
+	trained=True
+	result_available=False
+	if len(thetas)==0:
+		trained=False
+	else:
+		#obtain theta in numpy form for further use
+		theta=thetas.filter(name="theta_linreg_normal")
+		if len(theta)==0 or len(theta)>1:
+			trained=False
+		else:
+			theta = str_to_numpy(theta[0].theta_string)
+
+	if request.method == "GET":
+		return render(request, 'mlgym1/test_upload_linreg_normal.html', {'trained':trained,'result_available':result_available})
+	if not trained:
+		return redirect('csv_upload_linreg_normal')
+	csv_file=request.FILES['filename']
+	if not csv_file.name.endswith('.csv'):
+		return redirect('test_upload_linreg_normal')
+	db=pd.read_csv(csv_file)
+	try:
+		result_string=numpy_to_str(linreg_normal_predict(db, theta))
+		result_available=True
+	except:
+		result_available=False
+	return render(request, 'mlgym1/test_upload_linreg_normal.html', {'trained':trained, 'result':result_string, 'result_available':result_available})

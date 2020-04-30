@@ -12,7 +12,8 @@ training_methods=(
 	("ptron","Perceptron"),
 	("nn4","4 Layer Neural Network"),
 	("0", "Don't train"),
-	("logreg","Logistic Regression")
+	("logreg","Logistic Regression"),
+	("linreg_normal","Linear Regression via Normal Equation")
 	)
 class TrainingMethodForm(forms.Form):
 	method_field=forms.MultipleChoiceField(choices=training_methods)

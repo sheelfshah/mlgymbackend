@@ -14,4 +14,6 @@ urlpatterns=[
 	path('nn4/test', views.upload_csv_test_nn4, name="test_upload_nn4"),
 	path('logreg/train',views.upload_csv_train_logreg, name="csv_upload_logreg"),
 	path('logreg/test', views.upload_csv_test_logreg, name="test_upload_logreg"),
+	path('normallinreg/train', views.upload_csv_train_linreg_normal, name="csv_upload_linreg_normal"),
+	path('normallinreg/test', views.upload_csv_test_linreg_normal, name="test_upload_linreg_normal"),
 ]
