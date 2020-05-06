@@ -3,7 +3,7 @@
 <h2>Upload CSV File for training logistic regression model</h2>
 <form action="{% url 'csv_upload_logreg' %}" method="POST" enctype="multipart/form-data">
 	{%csrf_token%}
-	<label for="file1">X - Features</label>
+	<label for="file1">X - Features (including bias column)</label>
 	<input type = "file" id="file1" name = 'file1' required="True"/>
 	<br>
 	<label for="file2">Y - Results</label>
