@@ -5,12 +5,20 @@
 <h2>Upload CSV File for testing</h2>
 <form action="{% url 'test_upload_perceptron' %}" method="POST" enctype="multipart/form-data">
 	{%csrf_token%}
+	<label for="filename">X - Test</label>
 	<input type = "file" name = 'filename' required="True"/>
+	<br>
+	<br>
+	<label for="actual_y">Y - Test</label>
+	<input type = "file" name = 'actual_y' required="True"/>
 	<input type="submit" value="Upload"/>
 </form>
-<h2><small>ensure that it is in the same format as the training data and does not have a result column</small></h2>
+<h2><small>ensure that X is in the same format as the training data and does not have a result column</small></h2>
 {% else %}
-<h2>Predictions: {{result}}</h2>
+<h2>F1 Score: {{result.f1}}</h2>
+<h2>Accuracy: {{ result.acc }}</h2>
+<h3>True Positives - {{result.tp}}, False Positives - {{result.fp}}</h3>
+<h3>False Negatives - {{result.fn}}, True Negatives - {{result.tn}}</h3>
 {% endif %}
 {% else %}
 <h2>Training data unavailable. You can train an algorithm <a href="{% url 'csv_upload_perceptron' %}">here</a></h2>

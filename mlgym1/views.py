@@ -7,6 +7,7 @@ from .forms import MyUserForm, TrainingMethodForm
 from .algorithms import *
 from .Koustav_LR import *
 from .linreg_normal import *
+from .chandra_Linear_Regression import LinearRegression, linreg_predict
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from .signals import *
@@ -60,12 +61,12 @@ def choose_method(request):
 				return redirect('homepage')
 			elif method[0]=="ptron":
 				return redirect('csv_upload_perceptron')
-			elif method[0]=="nn4":
-				return redirect('csv_upload_nn4')
 			elif method[0]=="logreg":
 				return redirect('csv_upload_logreg')
 			elif method[0]=="linreg_normal":
 				return redirect('csv_upload_linreg_normal')
+			elif method[0]=="linreg":
+				return redirect('csv_upload_linreg')
 	return render(request, 'mlgym1/choose_method.html', {'form':form})
 
 @login_required
@@ -93,6 +94,7 @@ def upload_csv_test_perceptron(request):
 	thetas=request.user.thetas.all()
 	trained=True
 	result_available=False
+	result={'tp':0,'fp':0,'fn':0,'tn':0,'f1':0,'acc':0}
 	if len(thetas)==0:
 		trained=False
 	else:
@@ -104,83 +106,23 @@ def upload_csv_test_perceptron(request):
 			theta = str_to_numpy(theta[0].theta_string)
 
 	if request.method == "GET":
-		return render(request, 'mlgym1/test_upload_perceptron.html', {'trained':trained,'result_available':result_available})
+		return render(request, 'mlgym1/test_upload_perceptron.html', {'trained':trained,'result_available':result_available, 'result':result})
 	if not trained:
 		return redirect('csv_upload_perceptron')
 	csv_file=request.FILES['filename']
-	if not csv_file.name.endswith('.csv'):
+	csv_file_actual=request.FILES['actual_y']
+	if not csv_file.name.endswith('.csv') or not csv_file_actual.name.endswith('.csv'):
 		return redirect('test_upload_perceptron')
 	db=pd.read_csv(csv_file)
+	db_y=pd.read_csv(csv_file_actual)
 	try:
-		result_string=numpy_to_str(perceptron_predict(db, theta))
+		pred=(perceptron_predict(db, theta))
+		tp,fp,fn,tn,f1,acc=perceptron_accuracy(pred,db_y.to_numpy())
+		result={'tp':tp,'fp':fp,'fn':fn,'tn':tn,'f1':f1,'acc':acc}
 		result_available=True
 	except:
 		result_available=False
-	return render(request, 'mlgym1/test_upload_perceptron.html', {'trained':trained, 'result':result_string, 'result_available':result_available})
-
-@login_required
-def upload_csv_train_nn4(request):
-	if request.method == "GET":
-		return render(request, 'mlgym1/csv_upload_nn4.html', {})
-
-	csv_file1=request.FILES['file1']
-	csv_file2=request.FILES['file2']
-	if not csv_file1.name.endswith('.csv') or not csv_file1.name.endswith('.csv') :
-		return redirect("csv_upload_nn4")
-
-	db_x=pd.read_csv(csv_file1)
-	db_y=pd.read_csv(csv_file2)
-	theta_list=db_to_nn4(db_x, db_y)
-	response= redirect('test_upload_nn4')
-	request.user.thetas.all().delete()
-	theta_len=ThetaString()
-	theta_len.name="theta_nn4_len"
-	theta_len.theta_string=str(len(theta_list))
-	theta_len.user=request.user
-	theta_len.save()
-	for i in range(len(theta_list)):
-		theta=ThetaString()
-		theta.name='theta_nn4_'+str(i)
-		theta.theta_string=numpy_to_str(theta_list[i])
-		theta.user=request.user
-		theta.save()
-	return response
-
-@login_required
-def upload_csv_test_nn4(request):
-	thetas=request.user.thetas.all()
-	theta_len_list=thetas.filter(name="theta_nn4_len")
-	trained=True
-	result_available=False
-	l=0
-	theta_list=[]
-	if len(theta_len_list)==0 or len(theta_len_list)>1:
-		trained=False
-	else:
-		l=int(theta_len_list[0].theta_string)
-	for i in range(l):
-		try:
-			theta_i_str=thetas.filter(name=('theta_nn4_'+str(i)))[0]
-			theta_list.append(str_to_numpy(theta_i_str.theta_string))
-		except:
-			trained=False
-	if request.method=="GET":
-		return render(request, 'mlgym1/test_upload_nn4.html', {'trained':trained,'result_available':result_available})
-	if not trained:
-		return redirect('csv_upload_nn4')
-	csv_file=request.FILES['filename']
-	if not csv_file.name.endswith('.csv'):
-		return redirect('test_upload_nn4')
-	db=pd.read_csv(csv_file)
-	try:
-		result=nn4_predict(db,theta_list)
-		result_str=numpy_to_str(result)
-		result_available=True
-	except:
-		result_str=""
-		result_available=False
-	return render(request, 'mlgym1/test_upload_nn4.html', {'trained':trained,'result_available':result_available,'result_string':result_str})
-
+	return render(request, 'mlgym1/test_upload_perceptron.html', {'trained':trained, 'result':result, 'result_available':result_available})
 
 @login_required
 def upload_csv_train_logreg(request):
@@ -290,3 +232,62 @@ def upload_csv_test_linreg_normal(request):
 	except:
 		result_available=False
 	return render(request, 'mlgym1/test_upload_linreg_normal.html', {'trained':trained, 'result':result_string, 'result_available':result_available})
+
+@login_required
+def upload_csv_train_linreg(request):
+	if request.method == "GET":
+		return render(request, 'mlgym1/csv_upload_linreg.html', {})
+
+	csv_file=request.FILES['filename']
+	lr=str(request.POST.get('learning_rate'))
+	iters=str(request.POST.get('max_iterations'))
+	term=str(request.POST.get('termination_cost'))
+	reg=str(request.POST.get('regularization'))
+	lr=float(lr)
+	iters=int(iters)
+	term=float(term)
+	reg=float(reg)
+	if not csv_file.name.endswith('.csv'):
+		return redirect("csv_upload_linreg_normal")
+
+	db=pd.read_csv(csv_file)
+	theta=LinearRegression(db.iloc[:,:-1],db.iloc[:,-1],lr,term,iters,reg)
+	theta_str=numpy_to_str(theta)
+	request.user.thetas.all().delete()
+	theta_model=ThetaString()
+	theta_model.name="theta_linreg"
+	theta_model.theta_string=theta_str
+	theta_model.user=request.user
+	theta_model.save()
+	response= redirect('test_upload_linreg')
+	return response
+
+@login_required
+def upload_csv_test_linreg(request):
+	thetas=request.user.thetas.all()
+	trained=True
+	result_available=False
+	if len(thetas)==0:
+		trained=False
+	else:
+		#obtain theta in numpy form for further use
+		theta=thetas.filter(name="theta_linreg")
+		if len(theta)==0 or len(theta)>1:
+			trained=False
+		else:
+			theta = str_to_numpy(theta[0].theta_string)
+
+	if request.method == "GET":
+		return render(request, 'mlgym1/test_upload_linreg.html', {'trained':trained,'result_available':result_available})
+	if not trained:
+		return redirect('csv_upload_linreg')
+	csv_file=request.FILES['filename']
+	if not csv_file.name.endswith('.csv'):
+		return redirect('test_upload_linreg_normal')
+	db=pd.read_csv(csv_file)
+	try:
+		result_string=numpy_to_str(linreg_predict(db, theta))
+		result_available=True
+	except:
+		result_available=False
+	return render(request, 'mlgym1/test_upload_linreg.html', {'trained':trained, 'result':result_string, 'result_available':result_available})

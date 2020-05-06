@@ -1,0 +1,27 @@
+{% extends 'mlgym1/base.html'%}
+{% block content %}
+<h2>Upload CSV File for training Linear Regression Model</h2>
+<form action="{% url 'csv_upload_linreg' %}" method="POST" enctype="multipart/form-data">
+	{%csrf_token%}
+	<input type = "file" name = 'filename' required="True"/>
+	<br>
+	<label for="learning_rate">Learning Rate</label>
+	<input type="number" name='learning_rate' id="learning_rate" placeholder="0.01" step="0.001" min="0.001" max="10" required="True">
+	<br>
+	<br>
+	<label for="max_iterations">Number of Iterations</label>
+	<input type="number" name='max_iterations' id="max_iterations" placeholder="1000" step="100" min="100" max="100000" required="True">
+	<br>
+	<br>
+	<label for="termination_cost">Termination Cost</label>
+	<input type="number" name='termination_cost' id="termination_cost" placeholder="0" step="0.00001" min="0" max="100000" required="True">
+	<br>
+	<br>
+	<label for="regularization">Regularization Constant</label>
+	<input type="number" name='regularization' id="regularization" placeholder="0" step="0.00001" min="0" max="0.2" required="True">
+	<input type="submit" value="Upload"/>
+</form>
+<br>
+<h3>Upload a single file with the last column containing the result, and ensure that a bias column is present</h3>
+<h2><small>Training might take a while</small></h2>
+{% endblock %}
